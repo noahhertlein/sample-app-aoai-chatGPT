@@ -1,13 +1,10 @@
 import { FormEvent, useContext, useEffect, useMemo, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Checkbox, DefaultButton, Dialog, FontIcon, Stack, Text } from '@fluentui/react'
 import { useBoolean } from '@fluentui/react-hooks'
 import { ThumbDislike20Filled, ThumbLike20Filled } from '@fluentui/react-icons'
 import DOMPurify from 'dompurify'
-import remarkGfm from 'remark-gfm'
-import supersub from 'remark-supersub'
+import { BlockMath, InlineMath } from 'react-katex'
+import 'katex/dist/katex.min.css'
 import { AskResponse, Citation, Feedback, historyMessageFeedback } from '../../api'
 import { XSSAllowTags, XSSAllowAttributes } from '../../constants/sanatizeAllowables'
 import { AppStateContext } from '../../state/AppProvider'
@@ -226,38 +223,63 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
     )
   }
 
-  const components = {
-    code({ node, ...props }: { node: any;[key: string]: any }) {
-      let language
-      if (props.className) {
-        const match = props.className.match(/language-(\w+)/)
-        language = match ? match[1] : undefined
+  const renderContent = (text: string) => {
+    const parts: JSX.Element[] = [];
+    let currentIndex = 0;
+    const mathRegex = /(\$\$[\s\S]*?\$\$)|(\$[^\n$]*?\$)|(\\\[[\s\S]*?\\\])|(\\\([^\n\\\)]*?\\\))/g;
+    let match;
+
+    while ((match = mathRegex.exec(text)) !== null) {
+      // Add text before the math expression
+      if (match.index > currentIndex) {
+        const textContent = text.slice(currentIndex, match.index);
+        const lines = textContent.split('\n');
+        lines.forEach((line, i) => {
+          if (i > 0) parts.push(<br key={`br-${currentIndex}-${i}`} />);
+          if (line) parts.push(<span key={`text-${currentIndex}-${i}`}>{line}</span>);
+        });
       }
-      const codeString = node.children[0].value ?? ''
-      return (
-        <SyntaxHighlighter style={nord} language={language} PreTag="div" {...props}>
-          {codeString}
-        </SyntaxHighlighter>
-      )
+
+      const isBlock = match[0].startsWith('$$') || match[0].startsWith('\\[');
+      const mathContent = match[0].startsWith('\\[') || match[0].startsWith('\\(')
+        ? match[0].slice(2, match[0].length - 2)
+        : match[0].slice(isBlock ? 2 : 1, match[0].length - (isBlock ? 2 : 1));
+
+      try {
+        parts.push(
+          isBlock ? (
+            <BlockMath key={`math-${match.index}`} math={mathContent} errorColor={'#cc0000'} />
+          ) : (
+            <InlineMath key={`math-${match.index}`} math={mathContent} errorColor={'#cc0000'} />
+          )
+        );
+      } catch (err) {
+        console.error('KaTeX error:', err);
+        parts.push(<code key={`math-error-${match.index}`}>{match[0]}</code>);
+      }
+
+      currentIndex = match.index + match[0].length;
     }
-  }
+
+    // Add remaining text
+    if (currentIndex < text.length) {
+      const textContent = text.slice(currentIndex);
+      const lines = textContent.split('\n');
+      lines.forEach((line, i) => {
+        if (i > 0) parts.push(<br key={`br-end-${i}`} />);
+        if (line) parts.push(<span key={`text-end-${i}`}>{line}</span>);
+      });
+    }
+
+    return <div className={styles.answerText}>{parts}</div>;
+  };
   return (
     <>
       <Stack className={styles.answerContainer} tabIndex={0}>
         <Stack.Item>
           <Stack horizontal grow>
             <Stack.Item grow>
-              {parsedAnswer && <ReactMarkdown
-                linkTarget="_blank"
-                remarkPlugins={[remarkGfm, supersub]}
-                children={
-                  SANITIZE_ANSWER
-                    ? DOMPurify.sanitize(parsedAnswer?.markdownFormatText, { ALLOWED_TAGS: XSSAllowTags, ALLOWED_ATTR: XSSAllowAttributes })
-                    : parsedAnswer?.markdownFormatText
-                }
-                className={styles.answerText}
-                components={components}
-              />}
+              {parsedAnswer && renderContent(parsedAnswer.markdownFormatText)}
             </Stack.Item>
             <Stack.Item className={styles.answerHeader}>
               {FEEDBACK_ENABLED && answer.message_id !== undefined && (

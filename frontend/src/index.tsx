@@ -9,6 +9,7 @@ import NoPage from './pages/NoPage'
 import { AppStateProvider } from './state/AppProvider'
 
 import './index.css'
+import 'katex/dist/katex.min.css'
 
 initializeIcons()
 

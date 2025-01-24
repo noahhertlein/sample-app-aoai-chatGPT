@@ -25,6 +25,9 @@ export const enumerateCitations = (citations: Citation[]) => {
 export function parseAnswer(answer: AskResponse): ParsedAnswer {
   if (typeof answer.answer !== "string") return null
   let answerText = answer.answer
+
+  // No preprocessing of LaTeX expressions needed
+
   const citationLinks = answerText.match(/\[(doc\d\d?\d?)]/g)
 
   const lengthDocN = '[doc'.length

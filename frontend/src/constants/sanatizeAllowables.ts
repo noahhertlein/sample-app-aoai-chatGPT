@@ -1,4 +1,25 @@
 export const XSSAllowTags = [
+  // KaTeX elements
+  'math',
+  'annotation',
+  'semantics',
+  'mrow',
+  'mn',
+  'mi',
+  'mo',
+  'msup',
+  'msub',
+  'mfrac',
+  'mspace',
+  'mtable',
+  'mtr',
+  'mtd',
+  'munderover',
+  'mstyle',
+  'menclose',
+  'mphantom',
+  'mtext',
+  // Standard elements
   'iframe',
   'a',
   'img',
@@ -43,4 +64,35 @@ export const XSSAllowTags = [
   'li'
 ]
 
-export const XSSAllowAttributes = ['href']
+export const XSSAllowAttributes = [
+  'href',
+  // KaTeX attributes
+  'class',
+  'style',
+  'mathvariant',
+  'encoding',
+  'displaystyle',
+  'xmlns',
+  'display',
+  'aria-hidden',
+  'data-latex',
+  'stretchy',
+  'width',
+  'height',
+  'fill',
+  'stroke',
+  'd',
+  'viewBox',
+  'preserveAspectRatio',
+  'transform',
+  'x',
+  'y',
+  'dx',
+  'dy',
+  'text-anchor',
+  'data-c',
+  'data-l',
+  'data-r',
+  'data-t',
+  'data-tex'
+]
