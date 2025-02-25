@@ -1,0 +1,26 @@
+json env
+
+Get-Content .env | ForEach-Object {   
+     if ($_ -match "(?<name>[A-Z_]+)=(?<value>.*)") {   
+         [PSCustomObject]@{   
+             name = $matches["name"]   
+             value = $matches["value"]   
+             slotSetting = $false  
+         }  
+    }  
+} | ConvertTo-Json | Out-File -FilePath env.json
+
+Azure commands
+
+az webapp config set --startup-file "python3 -m gunicorn app:app" --name tutorforall
+
+az webapp config appsettings set -g tutorforallresource -n tutorforall --settings WEBSITE_WEBDEPLOY_USE_SCM=false
+
+az webapp config appsettings set -g tutorforallresource -n tutorforall --settings "@env.json"
+
+
+Update commands
+
+az webapp up --runtime PYTHON:3.11 --sku B1 --name tutorforall --resource-group tutorforallresource
+
+az webapp config set --startup-file "python3 -m gunicorn app:app" --name tutorforall

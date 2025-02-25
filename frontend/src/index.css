@@ -1,29 +1,68 @@
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html,
 body {
   height: 100%;
-  margin: 0;
-  padding: 0;
+  scroll-behavior: smooth;
 }
 
 html {
-  background: #f2f2f2;
+  background: linear-gradient(to bottom right, #f8f9fa, #f2f2f2);
   font-family:
-    'Segoe UI',
-    'Segoe UI Web (West European)',
-    'Segoe UI',
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
+    'Segoe UI',
     Roboto,
     'Helvetica Neue',
+    Arial,
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1a1a1a;
+}
+
+body {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #root {
   height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(17, 94, 163, 0.2);
+  color: inherit;
 }

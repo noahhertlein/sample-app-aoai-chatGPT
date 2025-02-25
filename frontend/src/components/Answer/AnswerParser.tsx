@@ -22,11 +22,43 @@ export const enumerateCitations = (citations: Citation[]) => {
   return citations
 }
 
+function preprocessText(text: string): string {
+  // Format headers
+  text = text.replace(/^###\s+([^\n]+)/gm, '<h3>$1</h3>');
+  text = text.replace(/^####\s+([^\n]+)/gm, '<h4>$1</h4>');
+
+  // Format definition blocks
+  text = text.replace(/\*\*([^*]+)\*\*:\s*([^\n]+)/g, 
+    '<div class="definitionBlock"><strong>$1:</strong> $2</div>');
+
+  // Format example blocks
+  text = text.replace(/^Example\s*\d*:\s*([^\n]+)/gm,
+    '<div class="exampleBlock">$1</div>');
+
+  // Format key points
+  text = text.replace(/^Key\s*Point:\s*([^\n]+)/gm,
+    '<div class="keyPoint">$1</div>');
+
+  // Format lists
+  text = text.replace(/^-\s+([^\n]+)/gm, '<div class="listItem">• $1</div>');
+
+  // Format math blocks
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, 
+    '<div class="mathBlock">\\[$1\\]</div>');
+
+  // Format inline math
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, 
+    '<span class="inlineMath">\\($1\\)</span>');
+
+  return text;
+}
+
 export function parseAnswer(answer: AskResponse): ParsedAnswer {
   if (typeof answer.answer !== "string") return null
   let answerText = answer.answer
 
-  // No preprocessing of LaTeX expressions needed
+  // Preprocess text for formatting
+  answerText = preprocessText(answerText);
 
   const citationLinks = answerText.match(/\[(doc\d\d?\d?)]/g)
 
@@ -47,6 +79,9 @@ export function parseAnswer(answer: AskResponse): ParsedAnswer {
   })
 
   filteredCitations = enumerateCitations(filteredCitations)
+
+  // Add paragraph tags to text blocks
+  answerText = answerText.replace(/([^\n]+)\n\n/g, '<p>$1</p>\n\n');
 
   return {
     citations: filteredCitations,

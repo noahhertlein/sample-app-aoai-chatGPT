@@ -1,4 +1,4 @@
-import { FormEvent, useContext, useEffect, useMemo, useState } from 'react'
+import React, { FormEvent, useContext, useEffect, useMemo, useState } from 'react'
 import { Checkbox, DefaultButton, Dialog, FontIcon, Stack, Text } from '@fluentui/react'
 import { useBoolean } from '@fluentui/react-hooks'
 import { ThumbDislike20Filled, ThumbLike20Filled } from '@fluentui/react-icons'
@@ -224,54 +224,65 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
   }
 
   const renderContent = (text: string) => {
-    const parts: JSX.Element[] = [];
-    let currentIndex = 0;
-    const mathRegex = /(\$\$[\s\S]*?\$\$)|(\$[^\n$]*?\$)|(\\\[[\s\S]*?\\\])|(\\\([^\n\\\)]*?\\\))/g;
-    let match;
+    // First, create a temporary div to parse the HTML content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
 
-    while ((match = mathRegex.exec(text)) !== null) {
-      // Add text before the math expression
-      if (match.index > currentIndex) {
-        const textContent = text.slice(currentIndex, match.index);
-        const lines = textContent.split('\n');
-        lines.forEach((line, i) => {
-          if (i > 0) parts.push(<br key={`br-${currentIndex}-${i}`} />);
-          if (line) parts.push(<span key={`text-${currentIndex}-${i}`}>{line}</span>);
-        });
+    const processNode = (node: Node): JSX.Element | string | null => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent || '';
       }
 
-      const isBlock = match[0].startsWith('$$') || match[0].startsWith('\\[');
-      const mathContent = match[0].startsWith('\\[') || match[0].startsWith('\\(')
-        ? match[0].slice(2, match[0].length - 2)
-        : match[0].slice(isBlock ? 2 : 1, match[0].length - (isBlock ? 2 : 1));
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        const children = Array.from(element.childNodes).map(processNode).filter(Boolean);
 
-      try {
-        parts.push(
-          isBlock ? (
-            <BlockMath key={`math-${match.index}`} math={mathContent} errorColor={'#cc0000'} />
-          ) : (
-            <InlineMath key={`math-${match.index}`} math={mathContent} errorColor={'#cc0000'} />
-          )
-        );
-      } catch (err) {
-        console.error('KaTeX error:', err);
-        parts.push(<code key={`math-error-${match.index}`}>{match[0]}</code>);
+        // Process math blocks
+        if (element.className === 'mathBlock') {
+          try {
+            const mathContent = element.textContent?.trim() || '';
+            return <BlockMath key={Math.random()} math={mathContent.slice(2, -2)} errorColor={'#cc0000'} />;
+          } catch (err) {
+            console.error('KaTeX error:', err);
+            return <code key={Math.random()}>{element.textContent}</code>;
+          }
+        }
+
+        // Process inline math
+        if (element.className === 'inlineMath') {
+          try {
+            const mathContent = element.textContent?.trim() || '';
+            return <InlineMath key={Math.random()} math={mathContent.slice(2, -2)} errorColor={'#cc0000'} />;
+          } catch (err) {
+            console.error('KaTeX error:', err);
+            return <code key={Math.random()}>{element.textContent}</code>;
+          }
+        }
+
+        // Handle other HTML elements
+        const props: any = {
+          key: Math.random(),
+          className: element.className || undefined
+        };
+
+        switch (element.tagName.toLowerCase()) {
+          case 'h3':
+          case 'h4':
+          case 'p':
+          case 'div':
+          case 'span':
+          case 'strong':
+            return React.createElement(element.tagName.toLowerCase(), props, children);
+          default:
+            return <>{children}</>;
+        }
       }
 
-      currentIndex = match.index + match[0].length;
-    }
+      return null;
+    };
 
-    // Add remaining text
-    if (currentIndex < text.length) {
-      const textContent = text.slice(currentIndex);
-      const lines = textContent.split('\n');
-      lines.forEach((line, i) => {
-        if (i > 0) parts.push(<br key={`br-end-${i}`} />);
-        if (line) parts.push(<span key={`text-end-${i}`}>{line}</span>);
-      });
-    }
-
-    return <div className={styles.answerText}>{parts}</div>;
+    const processedContent = processNode(tempDiv);
+    return <div className={styles.answerText}>{processedContent}</div>;
   };
   return (
     <>
